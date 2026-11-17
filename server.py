@@ -17,6 +17,7 @@
 
 import json
 import os
+import socket
 import sys
 import urllib.error
 import urllib.request
@@ -50,6 +51,9 @@ class Handler(SimpleHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(204)
         self._cors()
+        # 页面部署在 https 站点（如 GitHub Pages）时，Chrome 会先发一个
+        # "私有网络访问"预检，必须显式允许，否则本地代理会被拦。
+        self.send_header("Access-Control-Allow-Private-Network", "true")
         self.end_headers()
 
     def do_POST(self):
@@ -117,8 +121,52 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(data)
 
 
+def port_in_use(port):
+    """Windows 上 http.server 默认的 SO_REUSEADDR 会让「端口已被占用」变成静默成功，
+    所以启动前先主动探测一次。"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(0.5)
+    try:
+        return s.connect_ex(("127.0.0.1", port)) == 0
+    finally:
+        s.close()
+
+
+def enable_utf8_console():
+    """Windows 控制台默认是 GBK，中文提示会变乱码。切一下代码页。"""
+    if os.name == "nt":
+        try:
+            import ctypes
+            ctypes.windll.kernel32.SetConsoleOutputCP(65001)
+        except Exception:
+            pass
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+
 def main():
-    server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    enable_utf8_console()
+
+    if port_in_use(PORT):
+        print("")
+        print("  端口 %d 已经被占用了（可能已经开着一个 server.py）。" % PORT)
+        print("  换一个端口再试：")
+        print("      set PORT=8799 && python server.py")
+        print("  然后把页面设置里的「代理地址」改成 http://127.0.0.1:8799")
+        print("")
+        return
+
+    try:
+        server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    except OSError as e:
+        print("")
+        print("  端口 %d 起不来：%s" % (PORT, e))
+        print("  换一个端口再试：set PORT=8799 && python server.py")
+        print("")
+        return
+
     url = "http://127.0.0.1:%d/" % PORT
     print("")
     print("  拾页 · 本地服务已启动")

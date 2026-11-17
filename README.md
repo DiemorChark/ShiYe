@@ -18,7 +18,24 @@
 浏览器直连 DeepSeek 接口。实测 CORS 是通的，一般能直接用。缺点是密钥存在浏览器里。
 
 **方式二：双击 `start.bat`（推荐）**
-会启动一个本地小服务，页面和 API 请求都走本地，不存在跨域问题，也不会把 Key 暴露给第三方。需要装过 Python 3.8+。
+会启动一个本地小服务 `http://127.0.0.1:8765`，页面和 API 请求都走本地，不存在跨域问题，也不会把 Key 暴露给第三方。需要装过 Python 3.8+。
+Mac / Linux 用户没有 `start.bat`，直接 `python3 server.py` 即可。
+
+> 这个文件夹是**完全可移植**的：换台电脑、换个目录、换个浏览器都能直接跑。
+> 唯一跟着环境走的是三样东西——书架数据（各自的浏览器本地）、API Key（各自填）、本地代理（各自可选）。
+
+#### 关于这个本地地址
+
+`127.0.0.1` 是**回环地址**，永远指向“运行页面的这台电脑自己”。所以：
+
+- 每台电脑的地址都是 `http://127.0.0.1:8765`，但连的是各自的机器的服务
+- 没启动 `server.py` 的电脑打开它会显示“无法访问此网站”——因为那台机器上没有人在监听
+- 端口默认 8765，可用环境变量改：`set PORT=8799` 后启动，同时把页面里的「代理地址」改成 `http://127.0.0.1:8799`
+- 端口被占用时脚本会提示换端口
+
+**同学一般用不到它**：浏览器直连 API 是通的（实测过），`server.py` 只是跨域被拦时的兜底。
+另外，如果页面是从 **https 网址**打开的（比如 GitHub Pages），浏览器会限制页面访问 `http://127.0.0.1`，
+这种情况下请用直连，别开代理。
 
 ```
 python server.py            # 或者双击 start.bat
@@ -92,6 +109,43 @@ study/
 ├── start.bat    一键启动
 └── preview-study-*.png
 ```
+
+---
+
+## 分享给同学 / 传到 GitHub
+
+这个 `study/` 目录本身就是完整项目，不依赖工作区里的其他东西，可以直接当仓库根目录。
+
+```bash
+cd study
+git init
+git add .
+git commit -m "feat: 资料转学习关卡"
+git branch -M main
+git remote add origin https://github.com/<你的账号>/page-tutor.git
+git push -u origin main
+```
+
+**用 GitHub Pages 发布**：Settings → Pages → Source 选 `Deploy from a branch` → `main` / `(root)` → Save。
+一两分钟后地址是 `https://<账号>.github.io/page-tutor/`，同学点开就能用。
+
+**同学的使用流程**：打开网址 → 设置里选一家免费服务商（智谱 / 混元 / 星火）→ 填**他自己**的 Key。
+数据存在各自的浏览器里，互不影响，也不需要你做任何后端。
+
+### ⚠️ 三件不能做的事
+
+1. **别把 Key 提交进仓库**。本项目 Key 只存在浏览器 localStorage，代码里没有任何密钥，`.gitignore` 也挡了 `*key*.txt`。
+2. **别做「共用 Key」的服务器版本**。那样额度几分钟被刷完，还可能违反服务商条款导致封号；让每个人填自己的 Key 最稳。
+3. **别在工作区根目录 `git init`**，否则会把 `myosotis` 等无关项目一起推上去。只推 `study/` 即可。
+
+### 如果 github.io 打不开
+
+- **Gitee Pages**：需要实名认证 + 仓库公开，国内访问快
+- **腾讯云 / 阿里云静态网站托管**：免费额度够用
+- **直接发文件夹**：把 `study/` 打包发给同学，双击 `index.html` 一样能用
+
+解析库（pdf.js / mammoth / jszip）按 `jsDelivr → npmmirror 国内镜像 → unpkg` 的顺序自动切换，
+每个源 9 秒超时，所以校园网下也能加载出来。
 
 ---
 
