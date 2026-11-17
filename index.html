@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>拾页 · 把资料变成一堂课</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============ 书架 ============ -->
+  <section id="view-shelf" class="view">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">◈</span>
+        <span class="brand-text">拾页<small>PAGE&nbsp;TUTOR</small></span>
+      </div>
+      <div class="actions">
+        <button id="btn-settings" class="ghost" type="button">设置</button>
+        <button id="btn-upload" class="primary" type="button">＋ 上传资料</button>
+      </div>
+    </header>
+
+    <div class="hero">
+      <h1>把一份资料，<em>变成一堂课</em>。</h1>
+      <p>上传 PDF / Word / PPT，AI 会拆出全部知识点，一段一段讲给你听，讲到哪儿就练到哪儿。</p>
+    </div>
+
+    <div id="dropzone" class="dropzone" tabindex="0">
+      <input type="file" id="file-input" accept=".pdf,.docx,.pptx,.txt,.md" hidden />
+      <div class="dz-inner">
+        <div class="dz-icon">⊕</div>
+        <div class="dz-title">把文件拖到这里，或者 <span class="link">点我选择文件</span></div>
+        <div class="dz-hint">支持 PDF、Word（.docx）、PowerPoint（.pptx）、TXT、Markdown</div>
+      </div>
+    </div>
+
+    <div class="shelf-wrap">
+      <div class="shelf-head">
+        <h2>我的书架</h2>
+        <span id="shelf-count" class="muted"></span>
+      </div>
+      <div id="shelf" class="shelf"></div>
+      <div id="shelf-empty" class="empty" hidden>
+        <p>书架还空着。</p>
+        <p class="muted">上传第一份资料，它就会变成一本书立在这里。</p>
+      </div>
+      <div class="shelf-board"></div>
+    </div>
+
+    <footer class="page-foot">
+      <span>资料仅在本机解析；生成的关卡存在浏览器本地。</span>
+    </footer>
+  </section>
+
+  <!-- ============ 关卡 ============ -->
+  <section id="view-level" class="view" hidden>
+    <header class="levelbar">
+      <button id="btn-back" class="ghost" type="button">← 书架</button>
+      <div class="level-title">
+        <h2 id="level-name">—</h2>
+        <span id="level-meta" class="muted"></span>
+      </div>
+      <div class="level-progress">
+        <div class="bar"><i id="level-bar"></i></div>
+        <span id="level-pct" class="muted">0%</span>
+      </div>
+      <button id="btn-toc" class="ghost" type="button">目录</button>
+      <button id="btn-del" class="ghost danger" type="button" title="删除这本书">删除</button>
+    </header>
+
+    <main class="chat" id="chat" aria-live="polite"></main>
+    <footer class="composer" id="composer"></footer>
+    <aside class="toc" id="toc" hidden></aside>
+  </section>
+
+</div>
+
+<!-- ============ 上传 / 生成 ============ -->
+<div id="gen-modal" class="modal" hidden>
+  <div class="modal-card">
+    <h3 id="gen-title">准备生成</h3>
+    <p id="gen-sub" class="muted"></p>
+
+    <div id="gen-setup">
+      <div class="file-row">
+        <span class="file-icon" id="gen-file-icon">▤</span>
+        <div>
+          <div id="gen-file-name" class="file-name">—</div>
+          <div id="gen-file-meta" class="muted small">—</div>
+        </div>
+      </div>
+      <div class="opt-row">
+        <label>每段知识点
+          <select id="opt-points">
+            <option value="3">3 个</option>
+            <option value="4" selected>4 个</option>
+            <option value="5">5 个</option>
+          </select>
+        </label>
+        <label>每段题量
+          <select id="opt-quiz">
+            <option value="1">1 题</option>
+            <option value="2" selected>2 题</option>
+            <option value="3">3 题</option>
+          </select>
+        </label>
+      </div>
+      <div id="gen-estimate" class="estimate"></div>
+      <div class="modal-actions">
+        <button id="gen-cancel" class="ghost" type="button">取消</button>
+        <button id="gen-start" class="primary" type="button">开始生成关卡</button>
+      </div>
+    </div>
+
+    <div id="gen-run" hidden>
+      <div class="run-step" id="gen-step">正在解析文件…</div>
+      <div class="run-bar"><i id="gen-bar"></i></div>
+      <div class="run-log" id="gen-log"></div>
+      <div class="modal-actions">
+        <button id="gen-stop" class="ghost" type="button">停止</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 设置 ============ -->
+<div id="set-modal" class="modal" hidden>
+  <div class="modal-card wide">
+    <h3>设置</h3>
+    <p class="muted small">密钥只保存在本机浏览器里，不会上传到任何第三方。</p>
+
+    <label class="field">
+      <span>服务商预设</span>
+      <select id="set-preset" class="select">
+        <option value="deepseek">DeepSeek 官方（按量计费）</option>
+        <option value="zhipu">智谱 GLM-4-Flash（免费）</option>
+        <option value="dashscope">阿里云百炼 · 通义千问</option>
+        <option value="hunyuan">腾讯混元（lite 免费）</option>
+        <option value="siliconflow">硅基流动 SiliconFlow</option>
+        <option value="spark">讯飞星火（Lite 免费）</option>
+        <option value="custom">自定义</option>
+      </select>
+    </label>
+    <div id="set-hint" class="preset-hint"></div>
+
+    <label class="field">
+      <span>API 地址（Base URL）</span>
+      <input id="set-base" type="text" placeholder="https://api.deepseek.com/v1" spellcheck="false" />
+    </label>
+    <label class="field">
+      <span>API Key</span>
+      <input id="set-key" type="password" placeholder="sk-..." spellcheck="false" />
+    </label>
+    <label class="field">
+      <span>模型</span>
+      <input id="set-model" type="text" placeholder="deepseek-chat" spellcheck="false" list="model-list" />
+      <datalist id="model-list">
+        <option value="deepseek-chat"></option>
+        <option value="deepseek-reasoner"></option>
+      </datalist>
+    </label>
+
+    <label class="check">
+      <input id="set-proxy" type="checkbox" />
+      <span>浏览器直连被拦时，改用本地代理（先运行 server.py）</span>
+    </label>
+    <label class="field proxy-field">
+      <span>代理地址</span>
+      <input id="set-proxy-url" type="text" placeholder="http://127.0.0.1:8765" spellcheck="false" />
+    </label>
+
+    <label class="check">
+      <input id="set-mock" type="checkbox" />
+      <span>演示模式：不调用 API，用内置示例生成关卡（没有 Key 时可以先玩）</span>
+    </label>
+
+    <div class="hint-box">
+      预设全部是<b>境内服务商</b>。不想花钱就选 <b>智谱 GLM-4-Flash</b>、<b>腾讯混元 lite</b> 或 <b>讯飞星火 Lite</b>，
+      点「测试连接」确认通了再保存。<br />
+      DeepSeek 网页版（chat.deepseek.com）<b>不能</b>被程序调用，那属于违反服务条款，会连累账号。
+    </div>
+
+    <div id="set-test-result" class="test-result" hidden></div>
+
+    <div class="modal-actions">
+      <button id="set-test" class="ghost" type="button">测试连接</button>
+      <span class="grow"></span>
+      <button id="set-cancel" class="ghost" type="button">取消</button>
+      <button id="set-save" class="primary" type="button">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="app.js" defer></script>
+</body>
+</html>
