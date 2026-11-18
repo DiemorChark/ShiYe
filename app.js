@@ -1104,8 +1104,20 @@
   function renderToc() {
     var toc = $('#toc');
     toc.innerHTML = '';
-    var h = el('h4', '', '目录');
-    toc.appendChild(h);
+
+    var head = el('div', 'toc-head');
+    head.appendChild(el('h4', '', '目录'));
+    var close = el('button', 'toc-close', '×');
+    close.type = 'button';
+    close.title = '收起目录（Esc）';
+    close.setAttribute('aria-label', '收起目录');
+    close.addEventListener('click', function () { toc.hidden = true; });
+    head.appendChild(close);
+    toc.appendChild(head);
+
+    var list = el('div', 'toc-list');
+    toc.appendChild(list);
+
     current.segments.forEach(function (s, i) {
       var b = el('button', 'toc-item');
       b.type = 'button';
@@ -1119,7 +1131,7 @@
         var target = $('#chat').querySelector('[data-seg="' + i + '"]');
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
-      toc.appendChild(b);
+      list.appendChild(b);
     });
   }
 
@@ -1427,6 +1439,13 @@
       var t = $('#toc');
       t.hidden = !t.hidden;
       if (!t.hidden) renderToc();
+    });
+    // 点目录外面也能收起
+    document.addEventListener('click', function (e) {
+      var toc = $('#toc');
+      if (toc.hidden) return;
+      if (e.target.closest && (e.target.closest('#toc') || e.target.closest('#btn-toc'))) return;
+      toc.hidden = true;
     });
     $('#btn-del').addEventListener('click', function () {
       if (!current) return;
